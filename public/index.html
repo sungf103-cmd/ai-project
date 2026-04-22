@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 이미지 분석기</title>
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --card-bg: #1a1d2e;
+            --border-color: #2d324d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a7c1;
+            --accent-color: #7c4dff;
+            --accent-hover: #6a3de8;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: 95%;
+            max-width: 1200px;
+            height: 85vh;
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0 0 8px 0;
+            color: var(--accent-color);
+        }
+
+        .description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .upload-section {
+            flex: 1;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            margin-bottom: 20px;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+
+        .upload-section:hover {
+            border-color: var(--accent-color);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            background-color: #0f111a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 12px;
+            box-sizing: border-box;
+            resize: none;
+            height: 100px;
+            font-size: 14px;
+        }
+
+        .analyze-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .analyze-button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .result-panel {
+            background-color: #161926;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .model-tag {
+            background-color: rgba(124, 77, 255, 0.2);
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid var(--accent-color);
+        }
+
+        .result-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .result-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .result-item {
+            margin-bottom: 24px;
+        }
+
+        .result-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-text {
+            background-color: #0f111a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 왼쪽 패널: 입력 -->
+        <div class="panel">
+            <h1>AI 이미지 분석기</h1>
+            <p class="description">이미지를 업로드하고 질문을 입력하면 AI가 분석해 드립니다.</p>
+            
+            <div class="input-label">이미지 선택</div>
+            <div class="upload-section" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <div id="uploadPlaceholder">
+                    <div class="upload-icon">🖼️</div>
+                    <div style="font-weight: bold;">클릭하거나 이미지를 드래그하세요</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">JPG · PNG · WEBP · GIF | 최대 10MB</div>
+                </div>
+                <img id="imagePreview" class="preview-image" src="" alt="Preview">
+                <input type="file" id="fileInput" hidden accept="image/*">
+            </div>
+
+            <div class="input-group">
+                <div class="input-label">질문 입력</div>
+                <textarea id="questionInput" placeholder="이 이미지에서 텍스트를 추출하고 내용을 설명해줘."></textarea>
+            </div>
+
+            <button class="analyze-button" id="analyzeBtn">분석하기</button>
+        </div>
+
+        <!-- 오른쪽 패널: 결과 -->
+        <div class="panel result-panel">
+            <div class="result-header">
+                <span style="font-size: 14px; font-weight: bold;">분석 결과</span>
+                <span class="model-tag" id="modelInfo">모델 gemma4:e2b</span>
+            </div>
+            
+            <div class="result-content">
+                <div class="result-item">
+                    <div class="result-label">질문</div>
+                    <div class="result-text" id="displayQuestion">분석 전입니다.</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">AI 답변</div>
+                    <div class="result-text" id="displayAnswer">결과가 여기에 표시됩니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const questionInput = document.getElementById('questionInput');
+        
+        const displayQuestion = document.getElementById('displayQuestion');
+        const displayAnswer = document.getElementById('displayAnswer');
+
+        // 파일 선택 시 미리보기
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // 드래그 앤 드롭 이벤트
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-color)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border-color)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            """ 파일을 처리하고 미리보기를 생성합니다. """
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        uploadPlaceholder.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        // 분석 실행
+        analyzeBtn.addEventListener('click', async () => {
+            """ 서버로 이미지와 질문을 전송하고 결과를 받아옵니다. """
+            const file = fileInput.files[0];
+            const question = questionInput.value;
+
+            if (!file) {
+                alert('이미지를 선택해주세요.');
+                return;
+            }
+
+            if (!question) {
+                alert('질문을 입력해주세요.');
+                return;
+            }
+
+            // UI 상태 변경
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '분석 중...';
+            displayQuestion.textContent = question;
+            displayAnswer.textContent = 'AI가 분석 중입니다. 잠시만 기다려주세요...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file); // 요청하신 필드명 'file' 확인
+                formData.append('question', question);
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayAnswer.textContent = result.data;
+                } else {
+                    displayAnswer.textContent = '오류 발생: ' + result.message;
+                }
+            } catch (error) {
+                displayAnswer.textContent = '서버 연결에 실패했습니다: ' + error.message;
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '분석하기';
+            }
+        });
+    </script>
+</body>
+</html>
