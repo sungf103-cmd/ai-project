@@ -1,17 +1,15 @@
-import os
 import mysql.connector
-from dotenv import load_dotenv
-
-load_dotenv()
+import config
 
 def getDatabaseConnection():
     """ MySQL 데이터베이스 연결을 생성하고 반환합니다. """
+    appConfig = config.getAppConfig()
     try:
         connection = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DATABASE")
+            host=appConfig["mysqlHost"],
+            user=appConfig["mysqlUser"],
+            password=appConfig["mysqlPassword"],
+            database=appConfig["mysqlDatabase"]
         )
         return connection
     except Exception as e:

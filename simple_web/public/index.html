@@ -19,6 +19,10 @@
         .page-title { width: 100%; max-width: 1300px; margin-bottom: 24px; }
         .page-title h1 { font-size: 1.8rem; font-weight: 700; color: #fff; }
         .page-title p { color: #777; font-size: 0.9rem; margin-top: 4px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 24px; width: 100%; max-width: 1300px; }
+        .tab-btn { padding: 10px 24px; border-radius: 10px; border: 1px solid #2a2a2a; background: #1a1a1a; color: #888; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .tab-btn:hover:not(.active) { border-color: #7c3aed; color: #a78bfa; }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1300px; }
         .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px; }
         .card-title { font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
@@ -26,15 +30,14 @@
         .upload-area:hover { border-color: #7c3aed; }
         .upload-area.dragover { border-color: #7c3aed; background: #1e1530; }
         .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #555; }
-        #preview-img { max-width: 100%; max-height: 300px; object-fit: contain; display: none; border-radius: 8px; }
+        .preview-img { max-width: 100%; max-height: 300px; object-fit: contain; display: none; border-radius: 8px; }
         .file-name { font-size: 0.75rem; color: #555; margin-bottom: 16px; }
-        #file-input { display: none; }
         .input-label { font-size: 0.85rem; color: #666; margin-bottom: 8px; margin-top: 16px; }
         textarea { width: 100%; background: #111; border: 1px solid #2a2a2a; border-radius: 10px; color: #e0e0e0; padding: 14px; font-size: 0.9rem; resize: vertical; min-height: 120px; font-family: inherit; outline: none; transition: border-color 0.3s; }
         textarea:focus { border-color: #7c3aed; }
-        #analyze-btn { width: 100%; background: #7c3aed; color: white; border: none; border-radius: 10px; padding: 16px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; margin-top: 16px; }
-        #analyze-btn:hover { background: #6d28d9; }
-        #analyze-btn:disabled { background: #333; cursor: not-allowed; }
+        .action-btn { width: 100%; background: #7c3aed; color: white; border: none; border-radius: 10px; padding: 16px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; margin-top: 16px; }
+        .action-btn:hover { background: #6d28d9; }
+        .action-btn:disabled { background: #333; cursor: not-allowed; }
         .result-card { display: flex; flex-direction: column; gap: 16px; }
         .model-badge { display: inline-block; background: #2a1a4a; color: #a78bfa; border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; font-weight: 600; }
         .question-box { background: #111; border: 1px solid #2a2a2a; border-radius: 10px; padding: 14px 16px; color: #ccc; font-size: 0.9rem; min-height: 48px; }
@@ -51,7 +54,14 @@
         <h1>AI 이미지 분석기</h1>
         <p>이미지를 업로드하고 질문을 입력하면 AI가 분석해 드립니다.</p>
     </div>
-    <div class="container">
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('analyze')">🔍 이미지 분석</button>
+        <button class="tab-btn" onclick="switchTab('ocr')">📄 텍스트 추출 (OCR)</button>
+    </div>
+
+    <!-- 이미지 분석 탭 -->
+    <div id="tab-analyze" class="container">
         <div class="card">
             <div class="card-title">이미지 선택</div>
             <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
@@ -60,13 +70,13 @@
                     <span>클릭하거나 이미지를 드래그하세요</span>
                     <small>JPG · PNG · WEBP · GIF | 최대 10MB</small>
                 </div>
-                <img id="preview-img" alt="미리보기">
+                <img id="preview-img" class="preview-img" alt="미리보기">
             </div>
             <div class="file-name" id="file-name"></div>
-            <input type="file" id="file-input" accept="image/*">
+            <input type="file" id="file-input" accept="image/*" style="display:none;">
             <div class="input-label">질문 입력</div>
             <textarea id="question" placeholder="이 이미지에서 무엇을 알고 싶으신가요?"></textarea>
-            <button id="analyze-btn" onclick="handleAnalysis()">분석하기</button>
+            <button class="action-btn" id="analyze-btn" onclick="handleAnalysis()">분석하기</button>
         </div>
         <div class="card result-card">
             <div class="card-title">분석 결과</div>
@@ -84,7 +94,49 @@
             </div>
         </div>
     </div>
+
+    <!-- OCR 탭 -->
+    <div id="tab-ocr" class="container" style="display:none;">
+        <div class="card">
+            <div class="card-title">이미지 선택</div>
+            <div class="upload-area" id="ocr-upload-area" onclick="document.getElementById('ocr-file-input').click()">
+                <div class="upload-placeholder" id="ocr-upload-placeholder">
+                    <span>📄</span>
+                    <span>텍스트가 있는 이미지를 올려주세요</span>
+                    <small>JPG · PNG · WEBP | 최대 10MB</small>
+                </div>
+                <img id="ocr-preview-img" class="preview-img" alt="미리보기">
+            </div>
+            <div class="file-name" id="ocr-file-name"></div>
+            <input type="file" id="ocr-file-input" accept="image/*" style="display:none;">
+            <button class="action-btn" id="ocr-btn" onclick="handleOCR()">텍스트 추출하기</button>
+        </div>
+        <div class="card result-card">
+            <div class="card-title">추출된 텍스트</div>
+            <div id="ocr-placeholder" class="placeholder-text">이미지를 업로드하고 추출을 시작하세요.</div>
+            <div id="ocr-loading" class="loading">
+                <div class="spinner"></div>
+                찬드라 OCR 처리 중...
+            </div>
+            <div id="ocr-result" style="display:none;">
+                <span class="model-badge">모델 chandra-ocr-2</span>
+                <div class="result-section-title" style="margin-top:16px;">추출 결과</div>
+                <div class="answer-box" id="ocr-text"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ── 탭 전환 ──
+        function switchTab(tab) {
+            document.getElementById('tab-analyze').style.display = tab === 'analyze' ? 'grid' : 'none';
+            document.getElementById('tab-ocr').style.display = tab === 'ocr' ? 'grid' : 'none';
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', (tab === 'analyze' && i === 0) || (tab === 'ocr' && i === 1));
+            });
+        }
+
+        // ── 이미지 분석 탭 ──
         const uploadArea = document.getElementById('upload-area');
         const fileInput = document.getElementById('file-input');
         const previewImg = document.getElementById('preview-img');
@@ -95,14 +147,21 @@
         fileInput.addEventListener('change', (e) => { if (e.target.files[0]) showPreview(e.target.files[0]); });
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
         uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-        uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('dragover'); if (e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]); });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault(); uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
+        });
 
         function showPreview(file) {
             selectedFile = file;
             const reader = new FileReader();
-            reader.onload = (e) => { previewImg.src = e.target.result; previewImg.style.display = 'block'; uploadPlaceholder.style.display = 'none'; };
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+                uploadPlaceholder.style.display = 'none';
+            };
             reader.readAsDataURL(file);
-            document.getElementById('file-name').textContent = file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+            document.getElementById('file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
         }
 
         async function handleAnalysis() {
@@ -127,6 +186,54 @@
             } finally {
                 document.getElementById('loading').style.display = 'none';
                 analyzeBtn.disabled = false;
+            }
+        }
+
+        // ── OCR 탭 ──
+        const ocrUploadArea = document.getElementById('ocr-upload-area');
+        const ocrFileInput = document.getElementById('ocr-file-input');
+        const ocrPreviewImg = document.getElementById('ocr-preview-img');
+        const ocrUploadPlaceholder = document.getElementById('ocr-upload-placeholder');
+        let ocrFile = null;
+
+        ocrFileInput.addEventListener('change', (e) => { if (e.target.files[0]) showOcrPreview(e.target.files[0]); });
+        ocrUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); ocrUploadArea.classList.add('dragover'); });
+        ocrUploadArea.addEventListener('dragleave', () => ocrUploadArea.classList.remove('dragover'));
+        ocrUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault(); ocrUploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) showOcrPreview(e.dataTransfer.files[0]);
+        });
+
+        function showOcrPreview(file) {
+            ocrFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                ocrPreviewImg.src = e.target.result;
+                ocrPreviewImg.style.display = 'block';
+                ocrUploadPlaceholder.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+            document.getElementById('ocr-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        }
+
+        async function handleOCR() {
+            if (!ocrFile) { alert('이미지를 선택해주세요.'); return; }
+            document.getElementById('ocr-placeholder').style.display = 'none';
+            document.getElementById('ocr-result').style.display = 'none';
+            document.getElementById('ocr-loading').style.display = 'block';
+            document.getElementById('ocr-btn').disabled = true;
+            const formData = new FormData();
+            formData.append('file', ocrFile);
+            try {
+                const response = await fetch('/ocr', { method: 'POST', body: formData });
+                const data = await response.json();
+                document.getElementById('ocr-text').textContent = data.extracted_text || JSON.stringify(data, null, 2);
+                document.getElementById('ocr-result').style.display = 'block';
+            } catch (e) {
+                alert('OCR 중 오류가 발생했습니다.');
+            } finally {
+                document.getElementById('ocr-loading').style.display = 'none';
+                document.getElementById('ocr-btn').disabled = false;
             }
         }
     </script>
